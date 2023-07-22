@@ -45,13 +45,17 @@ int exitSocket() {
 }
 
 int main() {
+    //vars
     struct sockaddr_in serv_addr;
 	memset(&serv_addr, 0, sizeof(serv_addr));
     bool failed = false;
     int ret = 0;
+
+    //inits
     gfxInitDefault();
     consoleInit(GFX_TOP, GFX_LEFT);
     initSocket();
+    //parse ip
     FILE *ipf = fopen("sdmc:/con3troller/ip.txt", "r");
     char *ip = malloc(20*sizeof(char));
     fread(ip, 1, 19, ipf);
@@ -60,7 +64,9 @@ int main() {
     ip = realloc(ip, (iplen+1)*sizeof(char));
     ip[iplen] = '\0';
     fclose(ipf);
-    int sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
+
+    //socket
+    int sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (sockfd < 0) {
         failed = true;
         goto fail;
@@ -71,27 +77,31 @@ int main() {
         failed = true;
         goto fail;
     }
-    ret = connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
-    if (ret < 0) {
-        failed = true;
-        goto fail;
-    }
-fail:    if (failed) {
+fail:   if (failed) {
             printf("connection failed :( \n");
             goto exit;
         } 
-    
-    printf("connection successful!!, to \n%s:%d \n", ip, PORT);
     free(ip);
-
-
-     
-while (aptMainLoop()) {
+    sendto(sockfd, "Hey", 4, 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
+    char buf[10];
+    memset(buf, 0, 10);
+    recvfrom(sockfd, buf, 10, 0, NULL, NULL);
+    if (!(strcmp("Smosh", buf))) {
+        printf("connected");
+    } else {
+        printf("%s", buf);
+    }
+    u32 _kDown, kDown;
+    kDown = 0;
+    while (aptMainLoop()) {
         hidScanInput();
-        u32 kDown = hidKeysDown();
-        if (kDown) {
-            send(sockfd, &kDown, sizeof(u32), 0);
+        _kDown = hidKeysDown();
+        
+        
+        if (kDown != _kDown) {
+            sendto(sockfd, &_kDown, sizeof(u32), 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
         }
+        kDown = _kDown;
         if (kDown & KEY_START) break;
     }
 exit:

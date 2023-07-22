@@ -14,7 +14,7 @@ Yes, movement is unstable (right now, maybe I can fix)
 
 install pynput with
 ```python -3 -m pip install pynput``` \
-execute the script in the command line \
+execute the mouse.py script in the command line \
 on the 3DS SD card, create a folder named `con3troller`, inside, place a file named ip.txt. In this file, you place your PCs LOCAL IP address, e. g. ```192.168.178.61```, just that, no newline. \
 How do I get my local IP... - Google it \
 Place mouselistener.3dsx into `/3ds/`
@@ -23,4 +23,16 @@ Press START to exit
 
 ## keyboard
 
-WIP
+Buttons are mappable to other keyboard letters via config.json. Special buttons including the arrow keys are currently WIP
+
+#### Setup & Usage
+
+install pynput with
+```python -3 -m pip install pynput``` \
+place config.json next to keyboard.py \
+execute the keyboard.py script in the command line \
+on the 3DS SD card, create a folder named `con3troller`, inside, place a file named ip.txt. In this file, you place your PCs LOCAL IP address, e. g. ```192.168.178.61```, just that, no newline. \
+How do I get my local IP... - Google it \
+Place kblistener.3dsx into `/3ds/`
+Launch `kblistener` in the Homebrew Launcher \
+Press START to exit(so right now start isnt a working button)

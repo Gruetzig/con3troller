@@ -84,21 +84,23 @@ fail:   if (failed) {
     free(ip);
     sendto(sockfd, "Hey", 4, 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
     char buf[10];
+    memset(buf, 0, 10);
     recvfrom(sockfd, buf, 10, 0, NULL, NULL);
     if (!(strcmp("Smosh", buf))) {
         printf("connected");
     } else {
-
+        printf("%s", buf);
     }
-     
+    touchPosition touch, _touch;
+    touch.px = 0;
+    touch.py = 0;
 while (aptMainLoop()) {
         hidScanInput();
         u32 kDown = hidKeysDown();
 
-        touchPosition touch, _touch;
+        
         hidTouchRead(&_touch);
-        touch.px = 0;
-        touch.py = 0;
+        
         
         if (touch.px != _touch.px || touch.py != _touch.py) {
             //sendto(sockfd, &_touch.px, sizeof(u16), 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
