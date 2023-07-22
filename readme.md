@@ -21,7 +21,7 @@ Place mouselistener.3dsx into `/3ds/`
 Launch `mouselistener` in the Homebrew Launcher \
 Press START to exit
 
-## keyboard
+## buttons to keyboard
 
 Buttons are mappable to other keyboard letters via config.json. Special buttons including the arrow keys are currently WIP
 
