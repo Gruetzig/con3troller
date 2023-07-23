@@ -1,6 +1,6 @@
 .vscode/*
-kblistener/kblistener.*
-mouselistener/mouselistener.*
-mouselistener/build/*
-kblistener/build*
+buttonstokb/buttonstokb.*
+touchtomouse/touchtomouse.*
+touchtomouse/build/*
+buttonstokb/build*
 output/*

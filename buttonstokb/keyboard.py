@@ -40,13 +40,13 @@ config.close()
 pbuttons = json.loads(jsonf)
 print("config loaded")
 # socket
+print("Waiting for connection...")
 serversocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 port = 7078
 serversocket.bind(("", port))
 message, addr = serversocket.recvfrom(4)
 serversocket.sendto(b"Smosh", addr)
-
-print(str(message))
+print(f"{str(message, 'UTF-8')} from a connecting 3DS")
 # keyboard
 print("Initializing keyboard...")
 keyboard = Controller()
