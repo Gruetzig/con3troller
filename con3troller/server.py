@@ -17,14 +17,10 @@ def buttonstuff(buttons):
 
 def mousestuff(buttons, touchx, touchy):
     # touch
-    xpos = round((touchx/320)*1920)
-    ypos = round((touchy/240)*1080)
-    mouse.position = (xpos, ypos)
-    # mouse
-    if  (buttons & BIT(20)):
-        mouse.press(Button.left)
-    else:
-        mouse.release(Button.left)
+    if not touchx + touchy == 0:
+        xpos = round((touchx/320)*1920)
+        ypos = round((touchy/240)*1080)
+        mouse.position = (xpos, ypos)
 
 
 # button defines
