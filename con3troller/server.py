@@ -15,7 +15,7 @@ def buttonstuff(buttons):
         else:
             keyboard.release(pbuttons[key])
 
-def mousestuff(buttons, touchx, touchy):
+def mousestuff(touchx, touchy):
     # touch
     if not touchx + touchy == 0:
         xpos = round((touchx/320)*1920)
@@ -79,7 +79,7 @@ while True:
     resp, addr = serversocket.recvfrom(8)
     touchx, touchy, buttons = ustruct.unpack(resp)
     btt = threading.Thread(target=buttonstuff, args=(buttons,))
-    mouset = threading.Thread(target=mousestuff, args=(buttons, touchx, touchy))
+    mouset = threading.Thread(target=mousestuff, args=(touchx, touchy))
     btt.start()
     mouset.start()
     btt.join()
