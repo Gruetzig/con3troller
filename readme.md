@@ -17,8 +17,8 @@ install pynput with
 execute the mouse.py script in the command line \
 on the 3DS SD card, create a folder named `con3troller`, inside, place a file named ip.txt. In this file, you place your PCs LOCAL IP address, e. g. ```192.168.178.61```, just that, no newline. \
 How do I get my local IP... - Google it \
-Place mouselistener.3dsx into `/3ds/`
-Launch `mouselistener` in the Homebrew Launcher \
+Place touchtomouse.3dsx into `/3ds/`
+Launch `touchtomouse` in the Homebrew Launcher \
 Press START to exit
 
 ## buttons to keyboard
@@ -33,6 +33,6 @@ place config.json next to keyboard.py \
 execute the keyboard.py script in the command line \
 on the 3DS SD card, create a folder named `con3troller`, inside, place a file named ip.txt. In this file, you place your PCs LOCAL IP address, e. g. ```192.168.178.61```, just that, no newline. \
 How do I get my local IP... - Google it \
-Place kblistener.3dsx into `/3ds/`
-Launch `kblistener` in the Homebrew Launcher \
-Press START to exit(so right now start isnt a working button)
+Place buttonstokb.3dsx into `/3ds/`
+Launch `buttonstokb` in the Homebrew Launcher \
+Press START to exit(so right now start only works once, then it exits the app)

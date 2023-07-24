@@ -8,23 +8,22 @@ def split_4byte_integer(number):
     last_2_bytes = number & 0xFFFF
     return first_2_bytes, last_2_bytes
 
-
+print("Waiting for connection...")
 # socket
 serversocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 port = 7078
 serversocket.bind(("", port))
 message, addr = serversocket.recvfrom(4)
 serversocket.sendto(b"Smosh", addr)
+print(f"{str(message, 'UTF-8')} from a connecting 3DS")
 
-print(message)
-
-
+print("starting mouse controller")
 # response interpret
 ustruct = struct.Struct('I')
 
 # mouse setup
 mouse = Controller()
-print("starting mouse controller")
+print("Done. have fun")
 
 while True:
     # touchx = serversocket.recvfrom(2)
