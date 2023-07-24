@@ -3,9 +3,29 @@ import struct
 import json
 from pynput.mouse import Button, Controller
 from pynput.keyboard import Controller as kController
+import threading
 
 def BIT(n):
     return (1<<n)
+
+def buttonstuff(buttons):
+    for key in pbuttons:
+        if (bits[key] & buttons):
+            keyboard.press(pbuttons[key])
+        else:
+            keyboard.release(pbuttons[key])
+
+def mousestuff(buttons, touchx, touchy):
+    # touch
+    xpos = round((touchx/320)*1920)
+    ypos = round((touchy/240)*1080)
+    mouse.position = (xpos, ypos)
+    # mouse
+    if  (buttons & BIT(20)):
+        mouse.press(Button.left)
+    else:
+        mouse.release(Button.left)
+
 
 # button defines
 bits = {    
@@ -62,21 +82,13 @@ print("Done! Have fun")
 while True:
     resp, addr = serversocket.recvfrom(8)
     touchx, touchy, buttons = ustruct.unpack(resp)
-    # touch
-    xpos = round((touchx/320)*1920)
-    ypos = round((touchy/240)*1080)
-    mouse.position = (xpos, ypos)
-    # mouse
-    if  (buttons & BIT(20)):
-        mouse.press(Button.left)
-    else:
-        mouse.release(Button.left)
-    # buttons
-    for key in pbuttons:
-        if (bits[key] & buttons):
-            keyboard.press(pbuttons[key])
-        else:
-            keyboard.release(pbuttons[key])
+    btt = threading.Thread(target=buttonstuff, args=(buttons,))
+    mouset = threading.Thread(target=mousestuff, args=(buttons, touchx, touchy))
+    btt.start()
+    mouset.start()
+    btt.join()
+    mouset.join()
+    
 
 
 print("Exiting...")

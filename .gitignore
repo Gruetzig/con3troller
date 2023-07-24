@@ -1,6 +1,8 @@
 .vscode/*
 buttonstokb/buttonstokb.*
 touchtomouse/touchtomouse.*
+con3troller/con3troller.*
+con3troller/build/*
 touchtomouse/build/*
 buttonstokb/build*
 output/*
