@@ -1,22 +1,14 @@
 rm -rf output
 
-cd buttonstokb && make clean && make && cd ..
-cd touchtomouse && make clean && make && cd ..
+cd con3troller && make clean && make && cd ..
 
 mkdir output
-mkdir output/keyboard
-mkdir output/mouse
 
 cp readme.md output/
 cp ip.txt output/
-
-cp buttonstokb/keyboard.py output/keyboard
-cp touchtomouse/mouse.py output/mouse
-
-cp buttonstokb/buttonstokb.3dsx output/keyboard/
-cp touchtomouse/touchtomouse.3dsx output/mouse/
-
-cp buttonstokb/config.json output/keyboard/
+cp con3troller/con3troller.3dsx output/
+cp con3troller/kconfig.json output/
+cp con3troller/server.py output/
 
 cd output
 zip -r con3troller.zip .
