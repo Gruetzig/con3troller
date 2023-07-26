@@ -132,7 +132,9 @@ int main() {
             sendto(sockfd, &controls, sizeof(Controls), 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
         }
         kDown = _kDown;
+        kUp = _kUp;
         touch = _touch;
+        
         if (kDown & KEY_START) goto deinit;
         svcSleepThread(5*1000*1000);
     }
