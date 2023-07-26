@@ -2,37 +2,38 @@
 
 WIP 3DS controller via local WIFI. 
 
-## touch to mouse
+Whenever the touch position is updated, python script will update mouse position, current ratio: \
+(touchx / 320) * 1920 \
+(touchy / 240) * 1080 \
+(end result is rounded) \
+(movement should be stable)
 
-Whenever the touch position is updated, python script will update mouse position, current ratio:
-(touchx / 320) * 1920
-(touchy / 240) * 1080
-(end result is rounded)
-Yes, movement is unstable (right now, maybe I can fix)
+Buttons are mappable to other keyboard letters via kconfig.json. Special buttons including the arrow keys are currently WIP
 
-#### Setup & Usage
+## Setup 
 
-install pynput with
-```python -3 -m pip install pynput``` \
-execute the mouse.py script in the command line \
-on the 3DS SD card, create a folder named `con3troller`, inside, place a file named ip.txt. In this file, you place your PCs LOCAL IP address, e. g. ```192.168.178.61```, just that, no newline. \
-How do I get my local IP... - Google it \
-Place touchtomouse.3dsx into `/3ds/`
-Launch `touchtomouse` in the Homebrew Launcher \
-Press START to exit
+1. Install pynput with
+```python -3 -m pip install pynput``` 
+2. Place kconfig.json next to server.py 
+3. Execute the server.py script in the command line 
+4. n the 3DS SD card, create a folder named `con3troller`
+5. Inside, place a file named ip.txt
+6. In this file, you place your PCs LOCAL IP address, e. g. ```192.168.178.61```, just that, no newline
++ How do I get my local IP... - Google it
+7. Place con3troller.3dsx into `/3ds/` on the 3DS SD card
+8. Launch `con3troller` in the Homebrew Launcher 
 
-## buttons to keyboard
+Profit
 
-Buttons are mappable to other keyboard letters via config.json. Special buttons including the arrow keys are currently WIP
+You don't have to do all that every time, basically just ensure IP, launch python script, launch 3DS application, profit.
 
-#### Setup & Usage
 
-install pynput with
-```python -3 -m pip install pynput``` \
-place config.json next to keyboard.py \
-execute the keyboard.py script in the command line \
-on the 3DS SD card, create a folder named `con3troller`, inside, place a file named ip.txt. In this file, you place your PCs LOCAL IP address, e. g. ```192.168.178.61```, just that, no newline. \
-How do I get my local IP... - Google it \
-Place buttonstokb.3dsx into `/3ds/`
-Launch `buttonstokb` in the Homebrew Launcher \
-Press START to exit(so right now start only works once, then it exits the app)
+## 3DS side usage
+
+Press START to exit the app
+
+## Compiling
+
+### Linux(tested) / macOS(untested) / Windows(untested)
+
+Install [devkitPro](https://devkitpro.org/wiki/devkitPro_pacman), then the `3ds-dev` package. Then run `./build.sh`. To standalone compile the 3DS side, run `make` in the `con3troller` folder. Quick testing can be done with 3dslink, in case you don't know about it.
