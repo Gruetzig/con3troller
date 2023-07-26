@@ -9,12 +9,12 @@ import time
 def BIT(n):
     return (1<<n)
 
-def buttonstuff(buttons):
+def buttonstuff(bdown, bup):
     for key in pbuttons:
-        if (bits[key] & buttons):
-            keyboard.press(pbuttons[key])
-        else:
+        if (bits[key] & bup):
             keyboard.release(pbuttons[key])
+        elif (bits[key] & bdown):
+            keyboard.press(pbuttons[key])
 
 def mousestuff(touchx, touchy):
     # touch
@@ -70,15 +70,15 @@ print("Initializing mouse...")
 mouse = Controller()
 print("Done. have fun")
 # response interpret
-ustruct = struct.Struct('HHI')
+ustruct = struct.Struct('HHII')
 print("Initializing keyboard...")
 keyboard = kController()
 # mouse setup
 print("Done! Have fun")
 while True:
-    resp, addr = serversocket.recvfrom(8)
-    touchx, touchy, buttons = ustruct.unpack(resp)
-    btt = threading.Thread(target=buttonstuff, args=(buttons,))
+    resp, addr = serversocket.recvfrom(ustruct.size)
+    touchx, touchy, bdown, bup = ustruct.unpack(resp)
+    btt = threading.Thread(target=buttonstuff, args=(bdown, bup))
     mouset = threading.Thread(target=mousestuff, args=(touchx, touchy))
     btt.start()
     mouset.start()

@@ -16,7 +16,8 @@
 typedef struct controls {
     u16 touchx;
     u16 touchy;
-    u32 keybits;
+    u32 keydown;
+    u32 keyup;
 } Controls;
 
 int initSocket() {
@@ -110,8 +111,8 @@ int main() {
         goto exit;
     }
     free(ip);
-    u32 _kDown, kDown;
-    kDown = 0;
+    u32 _kDown, kDown, _kUp, kUp;
+    kDown = 0, kUp = 0;
     touchPosition touch, _touch;
     touch.px = 0;
     touch.py = 0;
@@ -120,10 +121,12 @@ int main() {
     while (aptMainLoop()) {
         hidScanInput();
         _kDown = hidKeysDown();
+        _kUp = hidKeysUp();
         hidTouchRead(&_touch);
         
-        if ((kDown != _kDown) || (touch.px != _touch.px || touch.py != _touch.py)) {
-            controls.keybits = _kDown;
+        if ((kDown != _kDown) || (touch.px != _touch.px || touch.py != _touch.py) || (_kUp == kUp)) {
+            controls.keydown = _kDown;
+            controls.keyup = _kUp;
             controls.touchx = _touch.px;
             controls.touchy = _touch.py;
             sendto(sockfd, &controls, sizeof(Controls), 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
