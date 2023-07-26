@@ -32,10 +32,11 @@ while True:
     _touch, addr = serversocket.recvfrom(4)
     touch = ustruct.unpack(_touch)[0]
     touchy, touchx = split_4byte_integer(touch)
-    xpos = round((touchx/320)*1920)
-    ypos = round((touchy/240)*1080)
-    mouse.position = (xpos, ypos)
-    print({xpos, ypos, addr})
+    if touchx + touchy != 0:
+        xpos = round((touchx/320)*1920)
+        ypos = round((touchy/240)*1080)
+        mouse.position = (xpos, ypos)
+        print({xpos, ypos, addr})
 
 print("Exiting...")
 serversocket.close()
