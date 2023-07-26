@@ -3,10 +3,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <sys/types.h>
 #include <stdbool.h>
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <malloc.h>
+#include <sys/time.h>
+#include <fcntl.h>
 
 #define PORT 7078
 
@@ -22,14 +25,14 @@ int initSocket() {
 
     soc_sharedmem = memalign(0x1000, soc_sharedmem_size);
     if(soc_sharedmem==NULL) {
-        printf("Failed to allocate SOC sharedmem.\n");
+        printf("Out of memory? PLease restart your 3DS.\n");
         return -1;
     }
     else {
     ret = socInit(soc_sharedmem, soc_sharedmem_size);
     }
     if(R_FAILED(ret)) {
-        printf("socInit failed: 0x%08x.\n", (unsigned int)ret);
+        printf("socket couldnt be created!! (socInit) 0x%08x.\n", (unsigned int)ret);
         return -1;
     }
     return 0;
@@ -40,16 +43,24 @@ int exitSocket() {
     return 0;
 }
 
+static bool set_socket_nonblocking(int sock)
+{
+	int flags = fcntl(sock, F_GETFL);
+	if (flags == -1) return false;
+	return fcntl(sock, F_SETFL, flags | O_NONBLOCK) == 0;
+}
+
 int main() {
     //vars
     struct sockaddr_in serv_addr;
 	memset(&serv_addr, 0, sizeof(serv_addr));
-    bool failed = false;
-
+    bool sock = false;
     //inits
     gfxInitDefault();
     consoleInit(GFX_TOP, GFX_LEFT);
-    initSocket();
+    if (initSocket()) {
+        goto exit;
+    }
     //parse ip
     FILE *ipf = fopen("sdmc:/con3troller/ip.txt", "r");
     char *ip = malloc(20*sizeof(char));
@@ -63,37 +74,49 @@ int main() {
     //socket
     int sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (sockfd < 0) {
-        failed = true;
-        goto fail;
+        printf("Socket could not be created\n");
+        goto exit;
+    } else {
+        sock = true;
     }
+    if (!set_socket_nonblocking(sockfd)) {
+        printf("Setting non-blocking failed\n");
+        goto exit;
+    }
+
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_port = htons(PORT);
     if (inet_pton(AF_INET, ip, &serv_addr.sin_addr) <= 0) {
-        failed = true;
-        goto fail;
+        printf("IP address invalid\n");
+        goto exit;
     }
-fail:   if (failed) {
-            printf("connection failed :( \n");
-            goto exit;
-        }
     printf("attempting connection...\n");
     sendto(sockfd, "Hey", 4, 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
     char buf[10];
     memset(buf, 0, 10);
-    recvfrom(sockfd, buf, 10, 0, NULL, NULL);
+    u64 curtick = svcGetSystemTick();
+    int recvfromres = -1;
+    while (recvfromres < 0 && (curtick + (((u64)10)*1000*1000*1000)) > svcGetSystemTick()) {
+        recvfromres = recvfrom(sockfd, buf, 10, 0, NULL, NULL);
+    }
+    if  (recvfromres < 0) {
+        printf("Response not received, won't connect\n");
+        goto exit;
+    }
     if (!(strcmp("Smosh", buf))) {
-        printf("connected to %s", ip);
+        printf("connected to %s\n", ip);
     } else {
-        printf("%s", buf);
-        goto fail;
+        printf("Invalid response received, won't connect, %s\n", buf);
+        goto exit;
     }
     free(ip);
-   u32 _kDown, kDown;
+    u32 _kDown, kDown;
     kDown = 0;
     touchPosition touch, _touch;
     touch.px = 0;
     touch.py = 0;
     Controls controls;
+    printf("Doing, press START to exit");
     while (aptMainLoop()) {
         hidScanInput();
         _kDown = hidKeysDown();
@@ -108,14 +131,20 @@ fail:   if (failed) {
         kDown = _kDown;
         touch = _touch;
         if (kDown & KEY_START) goto deinit;
+        svcSleepThread(5*1000*1000);
     }
 exit:
+    printf("Fail menu, press START to exit");
     while (aptMainLoop()) {
+        hidScanInput();
         u32 kDown = hidKeysDown();
         if (kDown & KEY_START) goto deinit;
     }
 deinit:
-    close(sockfd);
-    gfxExit();
+    if (sock) {
+        close(sockfd);
+    }
     exitSocket();
+    gfxExit();
+    return 0;
 }

@@ -4,6 +4,7 @@ import json
 from pynput.mouse import Button, Controller
 from pynput.keyboard import Controller as kController
 import threading
+import time
 
 def BIT(n):
     return (1<<n)
@@ -73,7 +74,6 @@ ustruct = struct.Struct('HHI')
 print("Initializing keyboard...")
 keyboard = kController()
 # mouse setup
-
 print("Done! Have fun")
 while True:
     resp, addr = serversocket.recvfrom(8)
@@ -84,7 +84,7 @@ while True:
     mouset.start()
     btt.join()
     mouset.join()
-    
+
 
 
 print("Exiting...")
