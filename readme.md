@@ -14,13 +14,13 @@ Buttons are mappable to other keyboard letters via kconfig.json. Special buttons
 
 1. Install pynput with
 ```python -3 -m pip install pynput``` 
-2. Place kconfig.json next to server.py 
-3. Execute the server.py script in the command line 
+2. Place `kconfig.json` next to `server.py` 
+3. Execute the `server.py` script in the command line with `python server.py` (python may also only work as `python3` or `py -3`)
 4. n the 3DS SD card, create a folder named `con3troller`
-5. Inside, place a file named ip.txt
+5. Inside, place a file named `ip.txt`
 6. In this file, you place your PCs LOCAL IP address, e. g. ```192.168.178.61```, just that, no newline
 + How do I get my local IP... - Google it
-7. Place con3troller.3dsx into `/3ds/` on the 3DS SD card
+7. Place `con3troller.3dsx` into `/3ds/` on the 3DS SD card
 8. Launch `con3troller` in the Homebrew Launcher 
 
 Profit
