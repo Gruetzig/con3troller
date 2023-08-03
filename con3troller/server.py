@@ -77,13 +77,16 @@ keyboard = kController()
 print("Done! Have fun")
 while True:
     resp, addr = serversocket.recvfrom(ustruct.size)
-    touchx, touchy, bdown, bup = ustruct.unpack(resp)
-    btt = threading.Thread(target=buttonstuff, args=(bdown, bup))
-    mouset = threading.Thread(target=mousestuff, args=(touchx, touchy))
-    btt.start()
-    mouset.start()
-    btt.join()
-    mouset.join()
+    if resp == b'Byebyebye~~\x00':
+        break
+    else:    
+        touchx, touchy, bdown, bup = ustruct.unpack(resp)
+        btt = threading.Thread(target=buttonstuff, args=(bdown, bup))
+        mouset = threading.Thread(target=mousestuff, args=(touchx, touchy))
+        btt.start()
+        mouset.start()
+        btt.join()
+        mouset.join()
 
 
 

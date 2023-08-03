@@ -2,14 +2,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <stdbool.h>
-#include <arpa/inet.h>
-#include <unistd.h>
-#include <malloc.h>
-#include <sys/time.h>
-#include <fcntl.h>
+#include "settings.h"
+#include "connect.h"
+#include "ui.h"
+#include "log.h"
+#include "strdraw.h"
 
 #define PORT 7078
 
@@ -20,136 +17,215 @@ typedef struct controls {
     u32 keyup;
 } Controls;
 
-int initSocket() {
-    Result ret=0;
-    u32 *soc_sharedmem, soc_sharedmem_size = 0x100000;
-
-    soc_sharedmem = memalign(0x1000, soc_sharedmem_size);
-    if(soc_sharedmem==NULL) {
-        printf("Out of memory? PLease restart your 3DS.\n");
-        return -1;
-    }
-    else {
-    ret = socInit(soc_sharedmem, soc_sharedmem_size);
-    }
-    if(R_FAILED(ret)) {
-        printf("socket couldnt be created!! (socInit) 0x%08x.\n", (unsigned int)ret);
-        return -1;
-    }
-    return 0;
-}
-
-int exitSocket() {
-    if (R_FAILED(socExit())) return -1;
-    return 0;
-}
-
-static bool set_socket_nonblocking(int sock)
-{
-	int flags = fcntl(sock, F_GETFL);
-	if (flags == -1) return false;
-	return fcntl(sock, F_SETFL, flags | O_NONBLOCK) == 0;
-}
+enum states {
+    STATE_INIT,
+    STATE_INITIAL,
+    STATE_LOAD_IP,
+    STATE_SELECT_IP,
+    STATE_CONNECTION_SETUP,
+    STATE_HANDSHAKE,
+    STATE_RUNNING
+};
 
 int main() {
     //vars
-    struct sockaddr_in serv_addr;
-	memset(&serv_addr, 0, sizeof(serv_addr));
-    bool sock = false;
+    int state = STATE_INIT;
+    char ip[20];
+    char ipmsgbuf[100];
+    DrawContext ctx;
+    int result;
+    bool showLogs = false;
     //inits
     gfxInitDefault();
-    consoleInit(GFX_TOP, GFX_LEFT);
-    if (initSocket()) {
+    cfguInit();
+    if (initLog(DEFAULT_LOG_SIZE)) {
+        printf("log init fail\n");
         goto exit;
     }
-    //parse ip
-    FILE *ipf = fopen("sdmc:/con3troller/ip.txt", "r");
-    char *ip = malloc(20*sizeof(char));
-    fread(ip, 1, 19, ipf);
-    ip[19] = '\0';
-    size_t iplen = strlen(ip);
-    ip = realloc(ip, (iplen+1)*sizeof(char));
-    ip[iplen] = '\0';
-    fclose(ipf);
-    printf("loaded ip %s from configuration\n", ip);
-    //socket
-    int sockfd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-    if (sockfd < 0) {
-        printf("Socket could not be created\n");
-        goto exit;
-    } else {
-        sock = true;
+    stringLog("log init success");
+    result = initSocket();
+    switch(result) {
+        case 0:
+            stringLog("socket init success");
+            break;
+        case -1:
+            stringLog("out of memory");
+            break;
+        case -2:
+            stringLog("socInit fail");
+            break;
     }
-    if (!set_socket_nonblocking(sockfd)) {
-        printf("Setting non-blocking failed\n");
+    if (result) {
         goto exit;
     }
-
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(PORT);
-    if (inet_pton(AF_INET, ip, &serv_addr.sin_addr) <= 0) {
-        printf("IP address invalid\n");
+    result = initUI();
+    switch(result) {
+        case 0:
+            stringLog("UI init success");
+            break;
+        case -1:
+            stringLog("C3D init fail");
+            break;
+        case -2:
+            stringLog("C2D init fail");
+            break;
+    }
+    if (result) {
         goto exit;
     }
-    printf("attempting connection...\n");
-    sendto(sockfd, "Hey", 4, 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
-    char buf[10];
-    memset(buf, 0, 10);
-    u64 curtick = svcGetSystemTick();
-    int recvfromres = -1;
-    while (recvfromres < 0 && (curtick + (((u64)10)*1000*1000*1000)) > svcGetSystemTick()) {
-        recvfromres = recvfrom(sockfd, buf, 10, 0, NULL, NULL);
-    }
-    if  (recvfromres < 0) {
-        printf("Response not received, won't connect\n");
-        goto exit;
-    }
-    if (!(strcmp("Smosh", buf))) {
-        printf("connected to %s\n", ip);
-    } else {
-        printf("Invalid response received, won't connect, %s\n", buf);
-        goto exit;
-    }
-    free(ip);
-    u32 _kDown, kDown, _kUp, kUp;
-    kDown = 0, kUp = 0;
-    touchPosition touch, _touch;
-    touch.px = 0;
-    touch.py = 0;
-    Controls controls;
-    printf("Doing, press START to exit");
+    initContext(&ctx);
+    initColors(&ctx);
     while (aptMainLoop()) {
+        u32 _kDown, kDown, _kUp, kUp;
+        kDown = 0, kUp = 0;
+        touchPosition touch, _touch;
+        touch.px = 0;
+        touch.py = 0;
+        Controls controls;
         hidScanInput();
         _kDown = hidKeysDown();
         _kUp = hidKeysUp();
         hidTouchRead(&_touch);
-        
-        if ((kDown != _kDown) || (touch.px != _touch.px || touch.py != _touch.py) || (_kUp == kUp)) {
-            controls.keydown = _kDown;
-            controls.keyup = _kUp;
-            controls.touchx = _touch.px;
-            controls.touchy = _touch.py;
-            sendto(sockfd, &controls, sizeof(Controls), 0, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
+        switch(state) {
+            case STATE_INIT:
+                result = socketSetup();
+                switch(result) {
+                    case 0:
+                        stringLog("socket setup successful");
+                        break;
+                    case -1:
+                        stringLog("UDP socket creation failed");
+                        break;
+                    case -2:
+                        stringLog("fcntl failed to set socket to non-blocking.");
+                        break;
+                }
+                if (result) {
+                    goto exit;
+                } else {
+                    state = STATE_INITIAL;
+                }
+            case STATE_INITIAL:
+                if (_kDown & KEY_START) goto deinit;
+                if (_kDown & KEY_X) {
+                    if (showLogs) {
+                        showLogs = false;
+                    } else {
+                        showLogs = true;
+                    }
+                }
+                if (_kDown & KEY_Y) state = STATE_SELECT_IP;
+                if (_kDown & KEY_A) state = STATE_LOAD_IP;
+                break;
+            case STATE_LOAD_IP:
+                //parse ip
+                result = parseIP(ip);
+                switch(result) {
+                    case 0:
+                        snprintf(ipmsgbuf, 100, "Loaded IP %s from configuration", ip);
+                        stringLog(ipmsgbuf);
+                        break;
+                    case -1:
+                        stringLog("Failed to open con3troller/ip.txt!");
+                        break;
+                    case -2:
+                        stringLog("Out of memory!");
+                        break;
+                }
+                if (result) {
+                    state = STATE_INITIAL;
+                } else {
+                    state = STATE_CONNECTION_SETUP;
+                }
+                break;
+            case STATE_SELECT_IP:
+                selectIP(ip);
+                state = STATE_INITIAL;
+                break;
+            case STATE_CONNECTION_SETUP:
+                result = connectToServer(ip, PORT);
+                switch(result) {
+                    case 0:
+                        stringLog("Connection setup successful");
+                        break;
+                    case -1:
+                        stringLog("IP address is invalid!");
+                }
+                if (result) {
+                    state = STATE_INITIAL;
+                } else {
+                    state = STATE_HANDSHAKE;
+                }
+                break;
+            case STATE_HANDSHAKE:
+                char out[10];
+                result = attemptHandshake(1000*5, out);
+                switch(result) {
+                    case 0:
+                        stringLog("Hand shaken");
+                        break;
+                    case -1:
+                        stringLog("Hand held to PC but no hand from PC, \nconnection timed out.");
+                        break;
+                }
+                if (result) {
+                    state = STATE_INITIAL;
+                } else {
+                    state = STATE_RUNNING;
+                    stringLog("Doing, press START to exit");
+                }
+                break;
+            case STATE_RUNNING:
+                if ((kDown != _kDown) || (touch.px != _touch.px || touch.py != _touch.py) || (_kUp != kUp)) {
+                    controls.keydown = _kDown;
+                    controls.keyup = _kUp;
+                    controls.touchx = _touch.px;
+                    controls.touchy = _touch.py;
+                    sendData(&controls, sizeof(Controls), 0);
+                }
+                if (_kDown & KEY_START) {
+                    disconnectfromServer();
+                    state = STATE_INITIAL;
+                    break;
+                }
+
         }
+
+        C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
+        C2D_TargetClear(ctx.top, ctx.clrBgDark);
+        C2D_SceneBegin(ctx.top);
+        if (showLogs) {
+            drawStringBoxAtPos(10.0f, 10.0f, 0.0f, 0.5f, ctx.clrWhite, ctx.clrBgBright, getLog(), 2.0f);
+        }
+
+        switch(state) {
+            case STATE_INITIAL:
+                drawStringBoxXCentered(SCREEN_HEIGHT-(30*0.5f)-1, 0, 0.5f, ctx.clrWhite, ctx.clrBgBright, "START: exit  A: begin  X: toggle logs  Y: change IP", 1.0f);
+            
+            default:
+        }
+        C3D_FrameEnd(0);
+        
         kDown = _kDown;
         kUp = _kUp;
         touch = _touch;
-        
-        if (kDown & KEY_START) goto deinit;
-        svcSleepThread(5*1000*1000);
     }
 exit:
-    printf("Fail menu, press START to exit");
+    consoleInit(GFX_TOP, GFX_LEFT);
+    printf("%s\nFail menu, press START to exit", getLog());
     while (aptMainLoop()) {
         hidScanInput();
         u32 kDown = hidKeysDown();
         if (kDown & KEY_START) goto deinit;
     }
 deinit:
-    if (sock) {
-        close(sockfd);
+    if (getSockState()) {
+        socketUnsetup();
     }
     exitSocket();
+    exitLog();
+    exitUI();
+    cfguExit();
     gfxExit();
     return 0;
 }
