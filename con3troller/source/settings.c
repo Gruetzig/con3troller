@@ -1,9 +1,8 @@
-#include <3ds.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include "settings.h"
 
+//settings constants
+bool doHID = true;
+bool doTouch = true;
 
 int parseIP(char* out) {
     FILE *ipf = fopen("sdmc:/con3troller/ip.txt", "r");
@@ -33,7 +32,33 @@ int parseIP(char* out) {
 void selectIP(char *inout) {
     SwkbdState swkbd;
     swkbdInit(&swkbd, SWKBD_TYPE_NUMPAD, 1, 15);
+    swkbdSetInitialText(&swkbd, inout);
     swkbdSetFeatures(&swkbd, SWKBD_FIXED_WIDTH);
     swkbdSetNumpadKeys(&swkbd, '.', 0);
-    swkbdInputText(&swkbd, inout, sizeof(inout));
+    swkbdInputText(&swkbd, inout, 15);
 }
+
+bool allowHID() {
+    return doHID;
+}
+
+bool allowTouch() {
+    return doTouch;
+}
+
+void toggleHID() {
+    if (doHID) {
+        doHID = false;
+    } else {
+        doHID = true;
+    }
+}
+
+void toggleTouch() {
+    if (doTouch) {
+        doTouch = false;
+    } else {
+        doTouch = true;
+    }
+}
+

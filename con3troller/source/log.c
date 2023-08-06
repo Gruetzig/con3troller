@@ -35,3 +35,7 @@ void exitLog() {
     free(lb);
     lbsize = 0;
 }
+
+void clearLog() {
+    lb[0] = '\0';
+}

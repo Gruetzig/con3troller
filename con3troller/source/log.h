@@ -8,3 +8,4 @@ int initLog(size_t logbufsize);
 void stringLog(char *string);
 char* getLog();
 void exitLog();
+void clearLog();

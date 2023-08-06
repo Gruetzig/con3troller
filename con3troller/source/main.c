@@ -7,6 +7,7 @@
 #include "ui.h"
 #include "log.h"
 #include "strdraw.h"
+#include "bth.h"
 
 #define PORT 7078
 
@@ -17,21 +18,33 @@ typedef struct controls {
     u32 keyup;
 } Controls;
 
-enum states {
+enum mainstates {
     STATE_INIT,
     STATE_INITIAL,
-    STATE_LOAD_IP,
+    STATE_LOAD_IP_FROM_CONFIG,
     STATE_SELECT_IP,
+    STATE_PRE_CONNECTION_SETUP,
     STATE_CONNECTION_SETUP,
     STATE_HANDSHAKE,
-    STATE_RUNNING
+    STATE_RUNNING,
+    STATE_SETTINGS_MENU
+};
+
+enum settingsstates {
+    SETTINGS_GENERAL,
+    SETTINGS_HOTKEYS,
+    SETTINGS_MENU
 };
 
 int main() {
     //vars
     int state = STATE_INIT;
-    char ip[20];
-    char ipmsgbuf[100];
+    int settingsstate = SETTINGS_MENU;
+    char ip[20] = "";
+    char currentIP[50] = "";
+    char actionText[200];
+    char errText[60];
+    char logbuf[100];
     DrawContext ctx;
     int result;
     bool showLogs = false;
@@ -75,6 +88,15 @@ int main() {
     }
     initContext(&ctx);
     initColors(&ctx);
+    sprintf(errText, "All good");
+    Button buttonQuit, buttonHotkeys, buttonReturn, buttonGeneral, buttonSettingsReturn, buttonGeneralHID, buttonGeneralTouch;
+    newButton(&buttonGeneral, 0.0f, 0.0f, 0.0f, SCREEN_WIDTH_BOTTOM, 60.0f, "General", 2.0f, ctx.clrWhite, ctx.clrBgDark, 0.5f);
+    newButton(&buttonHotkeys, 0.0f, 60.0f, 0.0f, SCREEN_WIDTH_BOTTOM, 60.0f, "Hotkeys", 2.0f, ctx.clrWhite, ctx.clrBgDark, 0.5f);
+    newButton(&buttonReturn, 0.0f, 120.0f, 0.0f, SCREEN_WIDTH_BOTTOM, 60.0f, "Return to main menu", 2.0f, ctx.clrWhite, ctx.clrBgDark, 0.5f);
+    newButton(&buttonQuit, 0.0f, 180.0f, 0.0f, SCREEN_WIDTH_BOTTOM, 60.0f, "Quit", 2.0f, ctx.clrWhite, ctx.clrBgDark, 0.5f);
+    newButton(&buttonSettingsReturn, 0.0f, 180.0f, 0.0f, SCREEN_WIDTH_BOTTOM, 60.0f, "Return to settings menu", 2.0f, ctx.clrWhite, ctx.clrBgDark, 0.5f);
+    newButton(&buttonGeneralHID, 0.0f, 0.0f, 0.0f, SCREEN_WIDTH_BOTTOM, 30.0f, "Enable HID: ", 2.0f, ctx.clrWhite, ctx.clrBgDark, 0.5f);
+    newButton(&buttonGeneralTouch, 0.0f, 30.0f, 0.0f, SCREEN_WIDTH_BOTTOM, 30.0f, "Enable Touch: ", 2.0f, ctx.clrWhite, ctx.clrBgDark, 0.5f);
     while (aptMainLoop()) {
         u32 _kDown, kDown, _kUp, kUp;
         kDown = 0, kUp = 0;
@@ -88,6 +110,7 @@ int main() {
         hidTouchRead(&_touch);
         switch(state) {
             case STATE_INIT:
+            sprintf(actionText, "Initializing...");
                 result = socketSetup();
                 switch(result) {
                     case 0:
@@ -106,24 +129,53 @@ int main() {
                     state = STATE_INITIAL;
                 }
             case STATE_INITIAL:
+                sprintf(currentIP, "IP: %s", ip);
                 if (_kDown & KEY_START) goto deinit;
                 if (_kDown & KEY_X) {
-                    if (showLogs) {
-                        showLogs = false;
-                    } else {
-                        showLogs = true;
+                        hidScanInput();
+                        _kDown = hidKeysDown();
+                        
+                        if (_kDown & KEY_DUP) { // X + Dpad Up: toggleLog
+                            if (showLogs) {
+                                showLogs = false;
+                            } else {
+                                showLogs = true;
+                            }
+                            break;
+                        }
+                        if (_kDown & KEY_DDOWN) { // X + Dpad Down: clearLog
+                            clearLog();
+                            break;
+                        }
                     }
                 }
-                if (_kDown & KEY_Y) state = STATE_SELECT_IP;
-                if (_kDown & KEY_A) state = STATE_LOAD_IP;
+                if (_kDown & KEY_Y) {
+                    state = STATE_SETTINGS_MENU;
+                }
+                if (_kDown & KEY_B) { // B combos / IP
+                    state = STATE_LOAD_IP_FROM_CONFIG;
+                    hidScanInput();
+                    _kDown = hidKeysDown();
+                    
+                    if (_kDown & KEY_DUP) { // B + Dpad Up: load from config
+                        state = STATE_LOAD_IP_FROM_CONFIG;
+                        break;
+                    }
+                    if (_kDown & KEY_DDOWN) { // X + Dpad Down: open swkbd
+                        state = STATE_SELECT_IP;
+                        break;
+                    }
+                }
+                if (_kDown & KEY_A) state = STATE_PRE_CONNECTION_SETUP;
+                if (_kDown & KEY_DDOWN) state = STATE_SETTINGS_MENU;
                 break;
-            case STATE_LOAD_IP:
+            case STATE_LOAD_IP_FROM_CONFIG:
                 //parse ip
                 result = parseIP(ip);
                 switch(result) {
                     case 0:
-                        snprintf(ipmsgbuf, 100, "Loaded IP %s from configuration", ip);
-                        stringLog(ipmsgbuf);
+                        snprintf(logbuf, 100, "Loaded IP %s from configuration", ip);
+                        stringLog(logbuf);
                         break;
                     case -1:
                         stringLog("Failed to open con3troller/ip.txt!");
@@ -132,15 +184,29 @@ int main() {
                         stringLog("Out of memory!");
                         break;
                 }
+                state = STATE_INITIAL;
                 if (result) {
-                    state = STATE_INITIAL;
+                    sprintf(errText, "parseIP fail: %d", result);
                 } else {
-                    state = STATE_CONNECTION_SETUP;
+                    sprintf(errText, "All good");
                 }
                 break;
             case STATE_SELECT_IP:
                 selectIP(ip);
+                sprintf(logbuf, "IP %s gotten from swkbd", ip);
+                stringLog(logbuf);
                 state = STATE_INITIAL;
+                break;
+            case STATE_PRE_CONNECTION_SETUP:
+                if (!strlen(ip)) {
+                    sprintf(errText, "No IP set");
+                    state = STATE_INITIAL;
+                } else {
+                    sprintf(errText, "All good");
+                    state = STATE_CONNECTION_SETUP;
+                }
+                sprintf(logbuf, "Using IP %s", ip);
+                stringLog(logbuf);
                 break;
             case STATE_CONNECTION_SETUP:
                 result = connectToServer(ip, PORT);
@@ -155,6 +221,11 @@ int main() {
                     state = STATE_INITIAL;
                 } else {
                     state = STATE_HANDSHAKE;
+                }
+                if (result) {
+                    sprintf(errText, "connectToServer fail(invalid IP): %d", result);
+                } else {
+                    sprintf(errText, "All good");
                 }
                 break;
             case STATE_HANDSHAKE:
@@ -174,35 +245,147 @@ int main() {
                     state = STATE_RUNNING;
                     stringLog("Doing, press START to exit");
                 }
+                if (result) {
+                    sprintf(errText, "attemptHandshake(connection Timeout) fail: %d", result);
+                } else {
+                    sprintf(errText, "All good");
+                }
                 break;
             case STATE_RUNNING:
                 if ((kDown != _kDown) || (touch.px != _touch.px || touch.py != _touch.py) || (_kUp != kUp)) {
-                    controls.keydown = _kDown;
-                    controls.keyup = _kUp;
-                    controls.touchx = _touch.px;
-                    controls.touchy = _touch.py;
+                    if (allowTouch()) {
+                        controls.keydown = _kDown;
+                        controls.keyup = _kUp;
+                    } else {
+                        controls.keydown = 0;
+                        controls.keyup = 0;
+                    }
+                    if (allowHID()) {
+                        controls.touchx = _touch.px;
+                        controls.touchy = _touch.py;
+                    } else {
+                        controls.touchx = 0;
+                        controls.touchy = 0;
+                    }
                     sendData(&controls, sizeof(Controls), 0);
                 }
                 if (_kDown & KEY_START) {
                     disconnectfromServer();
                     state = STATE_INITIAL;
-                    break;
                 }
+                sprintf(logbuf, "%d%d", allowTouch(), allowHID());
+                stringLog(logbuf);
+                break;
+            case STATE_SETTINGS_MENU:
+                switch(settingsstate) {
+                    case SETTINGS_MENU:
+                        if (isButtonPressed(&buttonGeneral)) {
+                            settingsstate = SETTINGS_GENERAL;
+                        }
+                        if (isButtonPressed(&buttonHotkeys)) {
+                            settingsstate = SETTINGS_HOTKEYS;
+                        }
+                        if (isButtonPressed(&buttonReturn)) {
+                            state = STATE_INITIAL;
+                        }
+                        if (isButtonPressed(&buttonQuit)) {
+                            goto deinit;
+                        }
+                        break;
+                    case SETTINGS_GENERAL:
+                        if (isButtonPressed(&buttonGeneralHID)) {
+                            toggleHID();
+                        }
+                        if (isButtonPressed(&buttonGeneralTouch)) {
+                            toggleTouch();
+                        }
+                        if (isButtonPressed(&buttonSettingsReturn)) {
+                            settingsstate = SETTINGS_MENU;
+                        }
+                        break;
+                        
+                }
+                break;
 
+
+
+        }
+        if (state == STATE_SETTINGS_MENU && settingsstate == SETTINGS_GENERAL) {
+            if (allowHID()) {
+                changeButtonString(&buttonGeneralHID, "Enable HID: ON");
+            } else {
+                changeButtonString(&buttonGeneralHID, "Enable HID: OFF");
+            }
+            if (allowTouch()) {
+                changeButtonString(&buttonGeneralTouch, "Enable Touch: ON");
+            } else {
+                changeButtonString(&buttonGeneralTouch, "Enable Touch: OFF");
+            }
+        }
+
+        switch(state) {
+            case STATE_INIT:
+                sprintf(actionText, "Initializing...");
+                break;
+            case STATE_INITIAL:
+                sprintf(actionText, "Welcome to con3troller");
+                break;
+            case STATE_CONNECTION_SETUP:
+                sprintf(actionText, "Setting up connection to %s...", ip);
+                break;
+            case STATE_LOAD_IP_FROM_CONFIG:
+                sprintf(actionText, "Loading IP from file...");
+                break;
+            case STATE_PRE_CONNECTION_SETUP:
+                sprintf(actionText, "Looking at the IP...");
+            case STATE_SELECT_IP:
+                sprintf(actionText, "Enter the desired IP address...");
+                break;
+            case STATE_HANDSHAKE:
+                sprintf(actionText, "Attempting connection to %s...", ip);
+                break;
+            case STATE_RUNNING:
+                sprintf(actionText, "Sending input to %s", ip);
+                break;
+            case STATE_SETTINGS_MENU:
+                sprintf(actionText, "    Settings    ");
+                break;
         }
 
         C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
         C2D_TargetClear(ctx.top, ctx.clrBgDark);
+        C2D_TargetClear(ctx.bottom, ctx.clrBlack);
+        C2D_SceneBegin(ctx.bottom); //workaround to definitely get targetclear through
         C2D_SceneBegin(ctx.top);
         if (showLogs) {
             drawStringBoxAtPos(10.0f, 10.0f, 0.0f, 0.5f, ctx.clrWhite, ctx.clrBgBright, getLog(), 2.0f);
         }
-
+        drawStringBoxXCentered(5, 0, 0.5f, ctx.clrWhite, ctx.clrBgBright, actionText, 1.0f);
+        drawStringBoxXCentered(SCREEN_HEIGHT-(60.0f*0.5f)-3, 0, 0.5f, ctx.clrWhite, ctx.clrBgBright, errText, 1.0f);
+        drawStringBoxXCentered(SCREEN_HEIGHT-(90.0f*0.5f)-5, 0, 0.5f, ctx.clrWhite, ctx.clrBgBright, currentIP, 1.0f);
         switch(state) {
             case STATE_INITIAL:
-                drawStringBoxXCentered(SCREEN_HEIGHT-(30*0.5f)-1, 0, 0.5f, ctx.clrWhite, ctx.clrBgBright, "START: exit  A: begin  X: toggle logs  Y: change IP", 1.0f);
-            
-            default:
+                drawStringBoxXCentered(SCREEN_HEIGHT-(30*0.5f)-1, 0, 0.5f, ctx.clrWhite, ctx.clrBgBright, "START: Exit  A: Begin  X: Toggle logs  Y: Change IP  B: Load IP", 1.0f);
+                break;
+            case STATE_RUNNING:
+                drawStringBoxXCentered(SCREEN_HEIGHT-(30*0.5f)-1, 0, 0.5f, ctx.clrWhite, ctx.clrBgBright, "START: Stop", 1.0f);
+                break;
+            case STATE_SETTINGS_MENU:
+                switch(settingsstate) {
+                    case SETTINGS_MENU:
+                        C2D_SceneBegin(ctx.bottom);
+                        drawButton(&buttonGeneral);
+                        drawButton(&buttonHotkeys);
+                        drawButton(&buttonReturn);
+                        drawButton(&buttonQuit);
+                        break;
+                    case SETTINGS_GENERAL:
+                        C2D_SceneBegin(ctx.bottom);
+                        drawButton(&buttonGeneralHID);
+                        drawButton(&buttonGeneralTouch);
+                        drawButton(&buttonSettingsReturn);
+                }
+                
         }
         C3D_FrameEnd(0);
         
@@ -210,7 +393,7 @@ int main() {
         kUp = _kUp;
         touch = _touch;
     }
-exit:
+// exit:
     consoleInit(GFX_TOP, GFX_LEFT);
     printf("%s\nFail menu, press START to exit", getLog());
     while (aptMainLoop()) {
@@ -218,10 +401,14 @@ exit:
         u32 kDown = hidKeysDown();
         if (kDown & KEY_START) goto deinit;
     }
-deinit:
+// deinit:
     if (getSockState()) {
         socketUnsetup();
     }
+    destroyButton(&buttonGeneral);
+    destroyButton(&buttonHotkeys);
+    destroyButton(&buttonReturn);
+    destroyButton(&buttonQuit);
     exitSocket();
     exitLog();
     exitUI();
