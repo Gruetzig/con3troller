@@ -6,6 +6,7 @@
 
 int parseIP(char* out);
 void selectIP(char *inout);
+void saveIP(char *in);
 bool allowHID();
 bool allowTouch();
 void toggleHID();

@@ -35,7 +35,19 @@ void selectIP(char *inout) {
     swkbdSetInitialText(&swkbd, inout);
     swkbdSetFeatures(&swkbd, SWKBD_FIXED_WIDTH);
     swkbdSetNumpadKeys(&swkbd, '.', 0);
-    swkbdInputText(&swkbd, inout, 15);
+    swkbdInputText(&swkbd, inout, 16);
+}
+
+void saveIP(char *in) {
+    FS_Archive SDarchive;
+    fsInit();
+    FSUSER_OpenArchive(&SDarchive, ARCHIVE_SDMC, fsMakePath(PATH_EMPTY, ""));
+    FSUSER_CreateDirectory(SDarchive, fsMakePath(PATH_ASCII, "/con3troller"), FS_ATTRIBUTE_DIRECTORY);
+    FSUSER_CloseArchive(SDarchive);
+    fsExit();
+    FILE *ipf = fopen("sdmc:/con3troller/ip.txt", "w");
+    fwrite(in, 1, strlen(in)+1, ipf);
+    fclose(ipf);
 }
 
 bool allowHID() {

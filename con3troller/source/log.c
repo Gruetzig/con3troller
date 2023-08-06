@@ -38,4 +38,5 @@ void exitLog() {
 
 void clearLog() {
     lb[0] = '\0';
+    sus = 0;
 }
