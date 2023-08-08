@@ -444,26 +444,10 @@ int main() {
                 }
                 break;
             case STATE_BUTTONPRESSED_B:
-            if (_kDown & KEY_X || _kHeld & KEY_X) {
-                    drawStringBoxXCentered(SCREEN_HEIGHT-(30*0.5f)-1, 0, 0.5f, ctx.clrWhite, ctx.clrBgBright, "Down: Clear Log  Up: Hide/show Log", 1.0f);
-                }
-                else if (_kHeld & KEY_B || _kHeld & KEY_B) {
-                    drawStringBoxXCentered(SCREEN_HEIGHT-(30*0.5f)-3, 0, 0.5f, ctx.clrWhite, ctx.clrBgBright, "Down: Select IP  Up: Load IP from configuration  Left: Save IP to configuration", 1.0f);
-                }
-                else {
-                    drawStringBoxXCentered(SCREEN_HEIGHT-(30*0.5f)-1, 0, 0.5f, ctx.clrWhite, ctx.clrBgBright, "START: Exit  A: Begin  Y: Settings  X: Configure IP  Y: Settings", 1.0f);
-                }
+                drawStringBoxXCentered(SCREEN_HEIGHT-(30*0.5f)-3, 0, 0.5f, ctx.clrWhite, ctx.clrBgBright, "Down: Select IP  Up: Load IP from configuration  Left: Save IP to configuration", 1.0f);
                 break;
             case STATE_BUTTONPRESSED_X:
-            if (_kDown & KEY_X || _kHeld & KEY_X) {
-                    drawStringBoxXCentered(SCREEN_HEIGHT-(30*0.5f)-1, 0, 0.5f, ctx.clrWhite, ctx.clrBgBright, "Down: Clear Log  Up: Hide/show Log", 1.0f);
-                }
-                else if (_kHeld & KEY_B || _kHeld & KEY_B) {
-                    drawStringBoxXCentered(SCREEN_HEIGHT-(30*0.5f)-3, 0, 0.5f, ctx.clrWhite, ctx.clrBgBright, "Down: Select IP  Up: Load IP from configuration  Left: Save IP to configuration", 1.0f);
-                }
-                else {
-                    drawStringBoxXCentered(SCREEN_HEIGHT-(30*0.5f)-1, 0, 0.5f, ctx.clrWhite, ctx.clrBgBright, "START: Exit  A: Begin  Y: Settings  X: Configure IP  Y: Settings", 1.0f);
-                }
+                drawStringBoxXCentered(SCREEN_HEIGHT-(30*0.5f)-1, 0, 0.5f, ctx.clrWhite, ctx.clrBgBright, "Down: Clear Log  Up: Hide/show Log", 1.0f);
                 break;
             case STATE_RUNNING:
                 drawStringBoxXCentered(SCREEN_HEIGHT-(30*0.5f)-1, 0, 0.5f, ctx.clrWhite, ctx.clrBgBright, "START: Stop", 1.0f);
