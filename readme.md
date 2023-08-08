@@ -16,21 +16,13 @@ Buttons are mappable to other keyboard letters via kconfig.json. Special buttons
 ```python -3 -m pip install pynput``` 
 2. Place `kconfig.json` next to `server.py` 
 3. Execute the `server.py` script in the command line with `python server.py` (python may also only work as `python3` or `py -3`)
-4. n the 3DS SD card, create a folder named `con3troller`
-5. Inside, place a file named `ip.txt`
-6. In this file, you place your PCs LOCAL IP address, e. g. ```192.168.178.61```, just that, no newline
-+ How do I get my local IP... - Google it
-7. Place `con3troller.3dsx` into `/3ds/` on the 3DS SD card
-8. Launch `con3troller` in the Homebrew Launcher 
-
-Profit
-
-You don't have to do all that every time, basically just ensure IP, launch python script, launch 3DS application, profit.
-
+4. Place `con3troller.3dsx` into `/3ds/` on the 3DS SD card
+5. Launch `con3troller` in the Homebrew Launcher 
 
 ## 3DS side usage
 
-Press START to exit the app
+Exit with the START button, begin with A button. Select the IP by using B and the D-Pad, open the settings(WIP) with the Y button. 
+IP is saved in sdmc:/con3troller/ip.txt
 
 ## Compiling
 

@@ -8,6 +8,8 @@
 #include "log.h"
 #include "strdraw.h"
 #include "bth.h"
+#include "hotkeys.h"
+#include "utils.h"
 
 #define PORT 7078
 
@@ -21,6 +23,8 @@ typedef struct controls {
 enum mainstates {
     STATE_INIT,
     STATE_INITIAL,
+    STATE_BUTTONPRESSED_X,
+    STATE_BUTTONPRESSED_B,
     STATE_LOAD_IP_FROM_CONFIG,
     STATE_SELECT_IP,
     STATE_SAVE_IP_TO_CONFIG,
@@ -37,18 +41,30 @@ enum settingsstates {
     SETTINGS_MENU
 };
 
+enum settingshotkeysstates {
+    HOTKEYS_MENU,
+    HOTKEYS_SET_EXIT
+};
+
 int main() {
-    //vars
-    int state = STATE_INIT;
-    int settingsstate = SETTINGS_MENU;
-    char ip[20] = "";
-    char currentIP[50] = "";
-    char actionText[200];
-    char errText[60];
-    char logbuf[100];
+    //general variables
+    int
+    state = STATE_INIT,
+    settingsstate = SETTINGS_MENU,
+    hotkeystate = HOTKEYS_MENU,
+    result;
+
+    char
+    ip[20] = "",
+    currentIP[50] = "",
+    actionText[200],
+    errText[60],
+    logbuf[100],
+    pbuttons[1000],
+    pbuttons2[900]; 
     DrawContext ctx;
-    int result;
-    bool showLogs = false;
+    bool
+    showLogs = false;
     //inits
     gfxInitDefault();
     cfguInit();
@@ -89,8 +105,9 @@ int main() {
     }
     initContext(&ctx);
     initColors(&ctx);
+    setDefaultHotkeys();
     sprintf(errText, "All good");
-    Button buttonQuit, buttonHotkeys, buttonReturn, buttonGeneral, buttonSettingsReturn, buttonGeneralHID, buttonGeneralTouch;
+    Button buttonQuit, buttonHotkeys, buttonReturn, buttonGeneral, buttonSettingsReturn, buttonGeneralHID, buttonGeneralTouch, buttonHotkeyCExit, buttonsHotkeyCReset;
     newButton(&buttonGeneral, 0.0f, 0.0f, 0.0f, SCREEN_WIDTH_BOTTOM, 60.0f, "General", 2.0f, ctx.clrWhite, ctx.clrBgDark, 0.5f);
     newButton(&buttonHotkeys, 0.0f, 60.0f, 0.0f, SCREEN_WIDTH_BOTTOM, 60.0f, "Hotkeys", 2.0f, ctx.clrWhite, ctx.clrBgDark, 0.5f);
     newButton(&buttonReturn, 0.0f, 120.0f, 0.0f, SCREEN_WIDTH_BOTTOM, 60.0f, "Return to main menu", 2.0f, ctx.clrWhite, ctx.clrBgDark, 0.5f);
@@ -98,6 +115,8 @@ int main() {
     newButton(&buttonSettingsReturn, 0.0f, 180.0f, 0.0f, SCREEN_WIDTH_BOTTOM, 60.0f, "Return to settings menu", 2.0f, ctx.clrWhite, ctx.clrBgDark, 0.5f);
     newButton(&buttonGeneralHID, 0.0f, 0.0f, 0.0f, SCREEN_WIDTH_BOTTOM, 30.0f, "Enable HID: ", 2.0f, ctx.clrWhite, ctx.clrBgDark, 0.5f);
     newButton(&buttonGeneralTouch, 0.0f, 30.0f, 0.0f, SCREEN_WIDTH_BOTTOM, 30.0f, "Enable Touch: ", 2.0f, ctx.clrWhite, ctx.clrBgDark, 0.5f);
+    newButton(&buttonHotkeyCExit, 0.0f, 30.0f, 0.0f, SCREEN_WIDTH_BOTTOM, 30.0f, "Exit combo: ", 2.0f, ctx.clrWhite, ctx.clrBgDark, 0.5f);
+    newButton(&buttonsHotkeyCReset, 0.0f, 150.0f, 0.0f, SCREEN_WIDTH_BOTTOM, 30.0f, "Reset to default", 2.0f, ctx.clrWhite, ctx.clrBgDark, 0.5f);
     while (aptMainLoop()) {
         u32 _kDown, kDown, _kUp, kUp, _kHeld;
         kDown = 0, kUp = 0;
@@ -130,51 +149,65 @@ int main() {
                 } else {
                     state = STATE_INITIAL;
                 }
+                break;
             case STATE_INITIAL:
                 sprintf(currentIP, "IP: %s", ip);
-                if (_kDown & KEY_START) goto deinit;
+                if (_kHeld & KEY_START) goto deinit;
                 if (_kDown & KEY_X) {
-                    while(_kHeld & KEY_X) { // X combos / Log
-                        hidScanInput();
-                        u32 _kHeld = hidKeysHeld();
-                        
-                        if (_kHeld & KEY_DUP) { // X + Dpad Up: toggleLog
-                            if (showLogs) {
-                                showLogs = false;
-                            } else {
-                                showLogs = true;
-                            }
-                            break;
-                        }
-                        if (_kHeld & KEY_DDOWN) { // X + Dpad Down: clearLog
-                            clearLog();
-                            break;
-                        }
-                    }
+                    state = STATE_BUTTONPRESSED_X;
                 }
                 if (_kDown & KEY_Y) {
                     state = STATE_SETTINGS_MENU;
                 }
                 if (_kDown & KEY_B) {
-                    while(_kHeld & KEY_B) { // B combos / IP
-                        hidScanInput();
-                        u32 _kHeld = hidKeysHeld();
-
-                        if (_kHeld & KEY_DUP) { // B + Dpad Up: load from config
-                            state = STATE_LOAD_IP_FROM_CONFIG;
-                            break;
-                        }
-                        if (_kHeld & KEY_DDOWN) { // X + Dpad Down: open swkbd
-                            state = STATE_SELECT_IP;
-                            break;
-                        }
-                        if (_kHeld & KEY_DLEFT) {
-                            state = STATE_SAVE_IP_TO_CONFIG;
-                            break;
-                        }
-                    }
+                    state = STATE_BUTTONPRESSED_B;
                 }
                 if (_kDown & KEY_A) state = STATE_PRE_CONNECTION_SETUP;
+                break;
+            case STATE_BUTTONPRESSED_B:
+                while(_kHeld & KEY_B) { // B combos / IP
+                    hidScanInput();
+                    u32 _kHeld = hidKeysHeld();
+                    if (_kHeld & KEY_DUP) { // B + Dpad Up: load from config
+                        state = STATE_LOAD_IP_FROM_CONFIG;
+                        break;
+                    }
+                    if (_kHeld & KEY_DDOWN) { // B + Dpad Down: open swkbd
+                        state = STATE_SELECT_IP;
+                        break;
+                    }
+                    if (_kHeld & KEY_DLEFT) { // B + Dpad Left: save to config
+                        state = STATE_SAVE_IP_TO_CONFIG;
+                        break;
+                    }
+                    if (!_kHeld) {
+                        state = STATE_INITIAL;
+                        break;
+                    }
+                }
+                break;
+            case STATE_BUTTONPRESSED_X:
+                while(_kHeld & KEY_X) { // X combos / Log
+                    hidScanInput();
+                    u32 _kHeld = hidKeysHeld();
+                    
+                    if (_kHeld & KEY_DUP) { // X + Dpad Up: toggleLog
+                        if (showLogs) {
+                            showLogs = false;
+                        } else {
+                            showLogs = true;
+                        }
+                        break;
+                    }
+                    if (_kHeld & KEY_DDOWN) { // X + Dpad Down: clearLog
+                        clearLog();
+                        break;
+                    }
+                    if (!_kHeld) {
+                        break;
+                    }
+                }
+                state = STATE_INITIAL;
                 break;
             case STATE_LOAD_IP_FROM_CONFIG:
                 //parse ip
@@ -282,7 +315,7 @@ int main() {
                     }
                     sendData(&controls, sizeof(Controls), 0);
                 }
-                if (_kDown & KEY_START) {
+                if (_kDown & exithotkey) {
                     disconnectfromServer();
                     state = STATE_INITIAL;
                 }
@@ -315,26 +348,46 @@ int main() {
                         }
                         break;
                     case SETTINGS_HOTKEYS:
-                        if (isButtonPressed(&buttonSettingsReturn)) {
-                            settingsstate = SETTINGS_MENU;
+                        switch(hotkeystate) {
+                            case HOTKEYS_MENU:
+                                if (isButtonPressed(&buttonsHotkeyCReset)) {
+                                    setDefaultHotkeys();
+                                }
+                                if (isButtonPressed(&buttonSettingsReturn)) {
+                                    settingsstate = SETTINGS_MENU;
+                                }
+                                if (isButtonPressed(&buttonHotkeyCExit)) {
+                                    hotkeystate = HOTKEYS_SET_EXIT;
+                                }
+                                break;
+                            case HOTKEYS_SET_EXIT:
+                                isButtonPressed(&buttonHotkeyCExit);
+                                u32 hotkey = listenAndSetHotkey();
+                                getComboString(hotkey, pbuttons);
+                                sprintf(pbuttons, "Exit combo: %s", pbuttons2);
+                                changeButtonString(&buttonHotkeyCExit, pbuttons);
+                                hotkeystate = HOTKEYS_MENU;
+                                break;
                         }
-                        break;
+                        break;  
                 }
                 break;
 
 
 
         }
-        if (state == STATE_SETTINGS_MENU && settingsstate == SETTINGS_GENERAL) {
-            if (allowHID()) {
-                changeButtonString(&buttonGeneralHID, "Enable HID: ON");
-            } else {
-                changeButtonString(&buttonGeneralHID, "Enable HID: OFF");
-            }
-            if (allowTouch()) {
-                changeButtonString(&buttonGeneralTouch, "Enable Touch: ON");
-            } else {
-                changeButtonString(&buttonGeneralTouch, "Enable Touch: OFF");
+        if (state == STATE_SETTINGS_MENU) {
+            if (settingsstate == SETTINGS_GENERAL) {
+                if (allowHID()) {
+                    changeButtonString(&buttonGeneralHID, "Enable HID: ON");
+                } else {
+                    changeButtonString(&buttonGeneralHID, "Enable HID: OFF");
+                }
+                if (allowTouch()) {
+                    changeButtonString(&buttonGeneralTouch, "Enable Touch: ON");
+                } else {
+                    changeButtonString(&buttonGeneralTouch, "Enable Touch: OFF");
+                }
             }
         }
 
@@ -380,7 +433,37 @@ int main() {
         drawStringBoxXCentered(SCREEN_HEIGHT-(90.0f*0.5f)-5, 0, 0.5f, ctx.clrWhite, ctx.clrBgBright, currentIP, 1.0f);
         switch(state) {
             case STATE_INITIAL:
-                drawStringBoxXCentered(SCREEN_HEIGHT-(30*0.5f)-1, 0, 0.5f, ctx.clrWhite, ctx.clrBgBright, "START: Exit  A: Begin  X: Toggle logs  Y: Change IP  B: Load IP", 1.0f);
+                if (_kDown & KEY_X || _kHeld & KEY_X) {
+                    drawStringBoxXCentered(SCREEN_HEIGHT-(30*0.5f)-1, 0, 0.5f, ctx.clrWhite, ctx.clrBgBright, "Down: Clear Log  Up: Hide/show Log", 1.0f);
+                }
+                else if (_kHeld & KEY_B || _kHeld & KEY_B) {
+                    drawStringBoxXCentered(SCREEN_HEIGHT-(30*0.5f)-3, 0, 0.5f, ctx.clrWhite, ctx.clrBgBright, "Down: Select IP  Up: Load IP from configuration  Left: Save IP to configuration", 1.0f);
+                }
+                else {
+                    drawStringBoxXCentered(SCREEN_HEIGHT-(30*0.5f)-1, 0, 0.5f, ctx.clrWhite, ctx.clrBgBright, "START: Exit  A: Begin  Y: Settings  X: Configure IP  Y: Settings", 1.0f);
+                }
+                break;
+            case STATE_BUTTONPRESSED_B:
+            if (_kDown & KEY_X || _kHeld & KEY_X) {
+                    drawStringBoxXCentered(SCREEN_HEIGHT-(30*0.5f)-1, 0, 0.5f, ctx.clrWhite, ctx.clrBgBright, "Down: Clear Log  Up: Hide/show Log", 1.0f);
+                }
+                else if (_kHeld & KEY_B || _kHeld & KEY_B) {
+                    drawStringBoxXCentered(SCREEN_HEIGHT-(30*0.5f)-3, 0, 0.5f, ctx.clrWhite, ctx.clrBgBright, "Down: Select IP  Up: Load IP from configuration  Left: Save IP to configuration", 1.0f);
+                }
+                else {
+                    drawStringBoxXCentered(SCREEN_HEIGHT-(30*0.5f)-1, 0, 0.5f, ctx.clrWhite, ctx.clrBgBright, "START: Exit  A: Begin  Y: Settings  X: Configure IP  Y: Settings", 1.0f);
+                }
+                break;
+            case STATE_BUTTONPRESSED_X:
+            if (_kDown & KEY_X || _kHeld & KEY_X) {
+                    drawStringBoxXCentered(SCREEN_HEIGHT-(30*0.5f)-1, 0, 0.5f, ctx.clrWhite, ctx.clrBgBright, "Down: Clear Log  Up: Hide/show Log", 1.0f);
+                }
+                else if (_kHeld & KEY_B || _kHeld & KEY_B) {
+                    drawStringBoxXCentered(SCREEN_HEIGHT-(30*0.5f)-3, 0, 0.5f, ctx.clrWhite, ctx.clrBgBright, "Down: Select IP  Up: Load IP from configuration  Left: Save IP to configuration", 1.0f);
+                }
+                else {
+                    drawStringBoxXCentered(SCREEN_HEIGHT-(30*0.5f)-1, 0, 0.5f, ctx.clrWhite, ctx.clrBgBright, "START: Exit  A: Begin  Y: Settings  X: Configure IP  Y: Settings", 1.0f);
+                }
                 break;
             case STATE_RUNNING:
                 drawStringBoxXCentered(SCREEN_HEIGHT-(30*0.5f)-1, 0, 0.5f, ctx.clrWhite, ctx.clrBgBright, "START: Stop", 1.0f);
@@ -403,6 +486,9 @@ int main() {
                     case SETTINGS_HOTKEYS:
                         C2D_SceneBegin(ctx.bottom);
                         drawButton(&buttonSettingsReturn);
+                        drawButton(&buttonsHotkeyCReset);
+                        drawButton(&buttonHotkeyCExit);
+                        break;
                 }
                 
         }

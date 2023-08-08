@@ -68,6 +68,9 @@ size_t getComboString(u32 bbt, char* out) {
     if (bbt & KEY_CSTICK_RIGHT) {
         strcat(out, "CStick Right+");
     }
+    if (bbt & KEY_TOUCH) {
+        strcat(out, "Touchscreen+");
+    }
     size_t outlen = strlen(out);
     out[outlen] = '\0';
     return outlen;
