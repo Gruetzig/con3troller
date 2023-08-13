@@ -434,23 +434,23 @@ int main() {
         switch(state) {
             case STATE_INITIAL:
                 if (_kDown & KEY_X || _kHeld & KEY_X) {
-                    drawStringBoxXCentered(SCREEN_HEIGHT-(30*0.5f)-1, 0, 0.5f, ctx.clrWhite, ctx.clrBgBright, "Down: Clear Log  Up: Hide/show Log", 1.0f);
+                    drawStringBoxXCentered(SCREEN_HEIGHT-(30*0.5f)-1, 0, 0.45f, ctx.clrWhite, ctx.clrBgBright, "Down: Clear Log  Up: Hide/show Log", 1.0f);
                 }
                 else if (_kHeld & KEY_B || _kHeld & KEY_B) {
-                    drawStringBoxXCentered(SCREEN_HEIGHT-(30*0.5f)-3, 0, 0.5f, ctx.clrWhite, ctx.clrBgBright, "Down: Select IP  Up: Load IP from configuration  Left: Save IP to configuration", 1.0f);
+                    drawStringBoxXCentered(SCREEN_HEIGHT-(30*0.5f)-1, 0, 0.41f, ctx.clrWhite, ctx.clrBgBright, "Down: Select IP  Up: Load IP from configuration  Left: Save IP to configuration", 1.0f);
                 }
                 else {
-                    drawStringBoxXCentered(SCREEN_HEIGHT-(30*0.5f)-1, 0, 0.5f, ctx.clrWhite, ctx.clrBgBright, "START: Exit  A: Begin  Y: Settings  X: Configure IP  Y: Settings", 1.0f);
+                    drawStringBoxXCentered(SCREEN_HEIGHT-(30*0.5f)-1, 0, 0.45f, ctx.clrWhite, ctx.clrBgBright, "START: Exit  A: Begin  B: IP things  X: Configure IP  Y: Settings", 1.0f);
                 }
-                break;
+                break; 
             case STATE_BUTTONPRESSED_B:
-                drawStringBoxXCentered(SCREEN_HEIGHT-(30*0.5f)-3, 0, 0.5f, ctx.clrWhite, ctx.clrBgBright, "Down: Select IP  Up: Load IP from configuration  Left: Save IP to configuration", 1.0f);
+                drawStringBoxXCentered(SCREEN_HEIGHT-(30*0.5f)-1, 0, 0.41f, ctx.clrWhite, ctx.clrBgBright, "Down: Select IP  Up: Load IP from configuration  Left: Save IP to configuration", 1.0f);
                 break;
             case STATE_BUTTONPRESSED_X:
-                drawStringBoxXCentered(SCREEN_HEIGHT-(30*0.5f)-1, 0, 0.5f, ctx.clrWhite, ctx.clrBgBright, "Down: Clear Log  Up: Hide/show Log", 1.0f);
+                drawStringBoxXCentered(SCREEN_HEIGHT-(30*0.5f)-1, 0, 0.45f, ctx.clrWhite, ctx.clrBgBright, "Down: Clear Log  Up: Hide/show Log", 1.0f);
                 break;
             case STATE_RUNNING:
-                drawStringBoxXCentered(SCREEN_HEIGHT-(30*0.5f)-1, 0, 0.5f, ctx.clrWhite, ctx.clrBgBright, "START: Stop", 1.0f);
+                drawStringBoxXCentered(SCREEN_HEIGHT-(30*0.5f)-1, 0, 0.45f, ctx.clrWhite, ctx.clrBgBright, "START: Stop", 1.0f);
                 break;
             case STATE_SETTINGS_MENU:
                 switch(settingsstate) {
