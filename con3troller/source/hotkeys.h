@@ -18,9 +18,7 @@ u32 listenAndSetHotkey() {
         hidScanInput();
         kDown = hidKeysHeld();  
         keydowns = kDown;
-        char buf[10];
-        snprintf(buf, 10, "%ld", keydowns);
-        stringLog(buf);
+        stringLog("Lol");
     }
     return keydowns;
 }

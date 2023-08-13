@@ -117,6 +117,7 @@ int main() {
     newButton(&buttonGeneralTouch, 0.0f, 30.0f, 0.0f, SCREEN_WIDTH_BOTTOM, 30.0f, "Enable Touch: ", 2.0f, ctx.clrWhite, ctx.clrBgDark, 0.5f);
     newButton(&buttonHotkeyCExit, 0.0f, 30.0f, 0.0f, SCREEN_WIDTH_BOTTOM, 30.0f, "Exit combo: ", 2.0f, ctx.clrWhite, ctx.clrBgDark, 0.5f);
     newButton(&buttonsHotkeyCReset, 0.0f, 150.0f, 0.0f, SCREEN_WIDTH_BOTTOM, 30.0f, "Reset to default", 2.0f, ctx.clrWhite, ctx.clrBgDark, 0.5f);
+    stringLog("Settings button init success");
     while (aptMainLoop()) {
         u32 _kDown, kDown, _kUp, kUp, _kHeld;
         kDown = 0, kUp = 0;
@@ -440,7 +441,7 @@ int main() {
                     drawStringBoxXCentered(SCREEN_HEIGHT-(30*0.5f)-1, 0, 0.41f, ctx.clrWhite, ctx.clrBgBright, "Down: Select IP  Up: Load IP from configuration  Left: Save IP to configuration", 1.0f);
                 }
                 else {
-                    drawStringBoxXCentered(SCREEN_HEIGHT-(30*0.5f)-1, 0, 0.45f, ctx.clrWhite, ctx.clrBgBright, "START: Exit  A: Begin  B: IP things  X: Configure IP  Y: Settings", 1.0f);
+                    drawStringBoxXCentered(SCREEN_HEIGHT-(30*0.5f)-1, 0, 0.45f, ctx.clrWhite, ctx.clrBgBright, "START: Exit  A: Begin  B: IP things  X: Log things  Y: Settings", 1.0f);
                 }
                 break; 
             case STATE_BUTTONPRESSED_B:
