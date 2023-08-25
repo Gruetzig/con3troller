@@ -52,7 +52,8 @@ int main() {
     state = STATE_INIT,
     settingsstate = SETTINGS_MENU,
     hotkeystate = HOTKEYS_MENU,
-    result;
+    result,
+    timeoutms = 5*1000;
 
     char
     ip[20] = "",
@@ -248,12 +249,13 @@ int main() {
                 if (!strlen(ip)) {
                     sprintf(errText, "No IP set");
                     state = STATE_INITIAL;
+                    stringLog("Connection attempt ignored because no IP set");
                 } else {
                     sprintf(errText, "All good");
                     state = STATE_CONNECTION_SETUP;
+                    sprintf(logbuf, "Using IP %s", ip);
+                    stringLog(logbuf);
                 }
-                sprintf(logbuf, "Using IP %s", ip);
-                stringLog(logbuf);
                 break;
             case STATE_CONNECTION_SETUP:
                 result = connectToServer(ip, PORT);
@@ -276,8 +278,10 @@ int main() {
                 }
                 break;
             case STATE_HANDSHAKE:
+                sprintf(logbuf, "Attempting Handshake with timeout of %dms", timeoutms);
+                stringLog(logbuf);
                 char out[10];
-                result = attemptHandshake(1000*5, out);
+                result = attemptHandshake(timeoutms, out);
                 switch(result) {
                     case 0:
                         stringLog("Hand shaken");
@@ -290,7 +294,7 @@ int main() {
                     state = STATE_INITIAL;
                 } else {
                     state = STATE_RUNNING;
-                    stringLog("Doing, press START to exit");
+                    stringLog("Entering sending mode");
                 }
                 if (result) {
                     sprintf(errText, "attemptHandshake(connection Timeout) fail: %d", result);
