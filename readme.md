@@ -10,6 +10,15 @@ Whenever the touch position is updated, python script will update mouse position
 
 Buttons are mappable to other keyboard letters via kconfig.json. Special buttons including the arrow keys are currently WIP
 
+## Supported operating Systems
+
+- Windows
+- macOS (not tested)
+- Linux
+    - X 
+    - Wayland not supported by pynput apparently
+
+
 ## Setup 
 
 1. Install pynput with
