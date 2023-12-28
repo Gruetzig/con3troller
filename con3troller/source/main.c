@@ -56,7 +56,7 @@ int main() {
     timeoutms = 5*1000;
 
     char
-    ip[20] = "",
+    ip[20] = "<empty>",
     currentIP[50] = "",
     actionText[200],
     errText[60],
@@ -250,6 +250,10 @@ int main() {
                     sprintf(errText, "No IP set");
                     state = STATE_INITIAL;
                     stringLog("Connection attempt ignored because no IP set");
+                } else if (!validIP(ip)) {
+                    sprintf(errText, "Invalid IP set");
+                    state = STATE_INITIAL;
+                    stringLog("Connection attempt ignored because IP is invalid");
                 } else {
                     sprintf(errText, "All good");
                     state = STATE_CONNECTION_SETUP;
@@ -366,9 +370,8 @@ int main() {
                                 }
                                 break;
                             case HOTKEYS_SET_EXIT:
-                                isButtonPressed(&buttonHotkeyCExit);
                                 u32 hotkey = listenAndSetHotkey();
-                                getComboString(hotkey, pbuttons);
+                                getComboString(hotkey, pbuttons2);
                                 sprintf(pbuttons, "Exit combo: %s", pbuttons2);
                                 changeButtonString(&buttonHotkeyCExit, pbuttons);
                                 hotkeystate = HOTKEYS_MENU;

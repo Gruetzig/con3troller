@@ -29,13 +29,41 @@ int parseIP(char* out) {
     return 0;
 }
 
+int charCount(char* string, char character, size_t maxlen, bool ignoreNullTerminator) {
+    int ret = 0;
+    for (int i = 0;i < maxlen;i++) {
+        if (string[i] == character) ret++;
+        if (string[i] == '\0' && !ignoreNullTerminator) break;
+    }
+    return ret;
+}
+
+bool charPaired(const char* string, char character) {
+    for (int i = 0;i<strlen(string)-1;i++) {
+        if ((string[i] == character) &&  (character == string[i+1])) {
+            return true;
+        }
+    }
+    return false;
+}
+bool validIP(const char *ip) {
+    char work[16]; //12 digits max, 3 dots, 1 null character
+    strncpy(work, ip, 16);
+    work[15] = '\0'; //ensure null termination
+    if (strlen(work) < 7) return false;
+    if (charCount(work, '.', 16, false) != 3) return false;
+    if (charPaired(work, '.')) return false;
+    return true;
+}
+
 void selectIP(char *inout) {
     SwkbdState swkbd;
     swkbdInit(&swkbd, SWKBD_TYPE_NUMPAD, 1, 15);
-    swkbdSetInitialText(&swkbd, inout);
+    if (inout[0] != '<') swkbdSetInitialText(&swkbd, inout); //if loop to prevent empty text showing up
     swkbdSetFeatures(&swkbd, SWKBD_FIXED_WIDTH);
     swkbdSetNumpadKeys(&swkbd, '.', 0);
     swkbdInputText(&swkbd, inout, 16);
+    return;
 }
 
 void saveIP(char *in) {

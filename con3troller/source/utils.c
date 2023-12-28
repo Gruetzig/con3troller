@@ -72,6 +72,6 @@ size_t getComboString(u32 bbt, char* out) {
         strcat(out, "Touchscreen+");
     }
     size_t outlen = strlen(out);
-    out[outlen] = '\0';
+    out[outlen-1] = '\0';
     return outlen;
 }
