@@ -5,7 +5,6 @@ cd con3troller && make clean && make && cd ..
 mkdir output
 
 cp readme.md output/
-cp ip.txt output/
 cp con3troller/con3troller.3dsx output/
 cp con3troller/kconfig.json output/
 cp con3troller/server.py output/
